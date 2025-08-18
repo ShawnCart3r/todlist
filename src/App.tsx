@@ -123,8 +123,6 @@ function SortableTask({
       ref={setNodeRef}
       style={style}
       className={`task ${isDeleting ? "deleting" : "appear"}`}
-      {...attributes}
-      {...listeners}
       onDoubleClick={() => setEditing(true)}
     >
       <div className="taskLeft">
@@ -175,6 +173,11 @@ function SortableTask({
       </div>
 
       <div className="taskRight">
+        {/* Drag handle lives here so inputs/selects don’t trigger drags */}
+        <button className="dragHandle" title="Drag to reorder" {...attributes} {...listeners}>
+          ⋮⋮
+        </button>
+
         {!editing && (
           <button className="icon" title="Edit" onClick={() => setEditing(true)}>
             ✏️
@@ -693,15 +696,14 @@ export default function App() {
                       <div className="droppable" id={l.id}>
                         {l.tasks.length === 0 && <div className="empty">No tasks</div>}
                         {l.tasks.map((t) => (
-                          <div key={t.id}>
-                            <SortableTask
-                              task={t}
-                              isDeleting={deleting.has(t.id)}
-                              onToggle={(id) => toggleTask(l.id, id)}
-                              onDelete={(id) => deleteTask(l.id, id)}
-                              onEdit={(id, patch) => editTask(l.id, id, patch)}
-                            />
-                          </div>
+                          <SortableTask
+                            key={t.id}
+                            task={t}
+                            isDeleting={deleting.has(t.id)}
+                            onToggle={(id) => toggleTask(l.id, id)}
+                            onDelete={(id) => deleteTask(l.id, id)}
+                            onEdit={(id, patch) => editTask(l.id, id, patch)}
+                          />
                         ))}
                       </div>
                     </div>
@@ -729,15 +731,14 @@ export default function App() {
                           <div className="droppable" id={l.id}>
                             {l.tasks.length === 0 && <div className="empty">No tasks</div>}
                             {l.tasks.map((t) => (
-                              <div key={t.id}>
-                                <SortableTask
-                                  task={t}
-                                  isDeleting={deleting.has(t.id)}
-                                  onToggle={(id) => toggleTask(l.id, id)}
-                                  onDelete={(id) => deleteTask(l.id, id)}
-                                  onEdit={(id, patch) => editTask(l.id, id, patch)}
-                                />
-                              </div>
+                              <SortableTask
+                                key={t.id}
+                                task={t}
+                                isDeleting={deleting.has(t.id)}
+                                onToggle={(id) => toggleTask(l.id, id)}
+                                onDelete={(id) => deleteTask(l.id, id)}
+                                onEdit={(id, patch) => editTask(l.id, id, patch)}
+                              />
                             ))}
                           </div>
                         </SortableContext>
@@ -898,25 +899,31 @@ export default function App() {
     border:1px solid var(--line);
   }
 
+  /* --- Horizontal scroller for lists --- */
   .listsGrid {
-  display: flex;                 /* use flex instead of grid */
-  gap: 14px;
-  overflow-x: auto;              /* scroll sideways when too many lists */
-  -webkit-overflow-scrolling: touch;
-  padding: 6px 4px 12px;
-  scroll-snap-type: x mandatory; /* optional: smooth snap on scroll */
-}
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 4px 12px;
+    scroll-snap-type: x mandatory;
+    width: 100%;
+    min-height: 140px;
+    touch-action: pan-x;
+  }
 
-.listPanel {
-  flex: 0 0 320px;               /* each list keeps its width */
-  max-width: 360px;
-  min-width: 280px;              /* don’t let them collapse */
-  scroll-snap-align: start;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
-}
+  .listPanel {
+    /* responsive width that scales nicely across breakpoints */
+    flex: 0 0 clamp(280px, 32vw, 360px);
+    max-width: clamp(280px, 32vw, 360px);
+    min-width: 280px;
+    scroll-snap-align: start;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
+  }
   .listPanel.focus { outline: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line)); }
   .panelHead { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line); }
   .panelTitle { font-weight:600; }
@@ -964,6 +971,18 @@ export default function App() {
   .icon.danger { color:#f87171; }
   .icon.confirm { color:#22c55e; }
 
+  /* New: dedicated drag handle to prevent accidental drags from inputs/selects */
+  .dragHandle {
+    cursor: grab;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 8px;
+    touch-action: none;
+  }
+  .dragHandle:active { cursor: grabbing; }
+
   /* Brighter placeholders in dark mode */
   .wrap.dark input::placeholder,
   .wrap.dark textarea::placeholder { color: #fff; opacity: 0.8; }
@@ -973,15 +992,18 @@ export default function App() {
     .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
     .actions { flex-wrap: wrap; }
     .searchBox { min-width: 0; width: 100%; }
+    .droppable { max-height: 62vh; overflow: auto; } /* optional: avoid nested page scroll */
   }
+
+  /* Final, correctly closed mobile rule for panel sizing */
   @media (max-width: 880px) {
-  .listPanel {
-    flex-basis: 92vw;
-    max-width: 92vw;
-    min-width: 92vw;
+    .listPanel {
+      flex-basis: 92vw;
+      max-width: 92vw;
+      min-width: 92vw;
+    }
   }
 `}</style>
     </div>
   );
 }
-
