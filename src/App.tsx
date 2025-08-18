@@ -174,7 +174,6 @@ function SortableTask({
       </div>
 
       <div className="taskRight">
-        {/* Dedicated drag handle so inputs don’t trigger drags */}
         <button className="dragHandle" title="Drag to reorder" {...attributes} {...listeners}>
           ⋮⋮
         </button>
@@ -340,75 +339,8 @@ export default function App() {
   };
 
   // helpers
-  const findListIdByTask = (taskId: ID): ID | null => {
-    for (const l of lists) if (l.tasks.some((t) => t.id === taskId)) return l.id;
-    return null;
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-    const activeId = active.id as ID;
-    const overId = over.id as ID;
-
-    const fromListId = findListIdByTask(activeId);
-    const toListId = listIds.includes(overId) ? (overId as ID) : findListIdByTask(overId);
-    if (!fromListId || !toListId || fromListId === toListId) return;
-
-    setLists((ls) => {
-      const from = ls.find((l) => l.id === fromListId)!;
-      const to = ls.find((l) => l.id === toListId)!;
-
-      const activeTask = from.tasks.find((t) => t.id === activeId)!;
-      const fromTasks = from.tasks.filter((t) => t.id !== activeId);
-
-      const overIndex = listIds.includes(overId) ? to.tasks.length : to.tasks.findIndex((t) => t.id === overId);
-      const toTasks = [...to.tasks];
-      const insertIndex = overIndex < 0 ? toTasks.length : overIndex;
-      toTasks.splice(insertIndex, 0, activeTask);
-
-      return ls.map((l) => {
-        if (l.id === fromListId) return { ...l, tasks: fromTasks };
-        if (l.id === toListId) return { ...l, tasks: toTasks };
-        return l;
-      });
-    });
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-    const activeId = active.id as ID;
-    const overId = over.id as ID;
-
-    const fromListId = findListIdByTask(activeId);
-    const toListId = listIds.includes(overId) ? (overId as ID) : findListIdByTask(overId);
-    if (!fromListId || !toListId) return;
-
-    if (fromListId === toListId) {
-      const list = lists.find((l) => l.id === fromListId)!;
-      const oldIndex = list.tasks.findIndex((t) => t.id === activeId);
-      const newIndex = listIds.includes(overId)
-        ? Math.max(0, list.tasks.length - 1)
-        : list.tasks.findIndex((t) => t.id === overId);
-
-      if (oldIndex !== newIndex && newIndex >= 0) {
-        setLists((ls) =>
-          ls.map((l) => (l.id === list.id ? { ...l, tasks: arrayMove(l.tasks, oldIndex, newIndex) } : l))
-        );
-      }
-    }
-  };
-
-  /* ---------------------------
-   * Ingest (paste/drag) controls
-   * --------------------------- */
-  const [ingestMode, setIngestMode] = useState<IngestMode>("single");
-  const [ingestTarget, setIngestTarget] = useState<IngestTarget>("today");
-
   const findListByName = (name: string) =>
     lists.find((l) => l.name.trim().toLowerCase() === name.trim().toLowerCase()) || null;
-
   const getOrCreateListByName = (name: string) => {
     const hit = findListByName(name);
     if (hit) return hit.id;
@@ -416,9 +348,10 @@ export default function App() {
     setLists((ls) => [...ls, { id, name, tasks: [], autoResetMidnight: false }]);
     return id;
   };
-
-  const ensureTodayId = () => getOrCreateListByName("Today");
   const ensureInboxId = () => getOrCreateListByName("Inbox");
+
+  // NEW QoL helper: find an existing Today without creating it
+  const findTodayId = () => findListByName("Today")?.id || null;
 
   function parseTextToTasks(raw: string, mode: IngestMode, target: IngestTarget): Record<ID, Task[]> {
     const lines = raw
@@ -436,11 +369,13 @@ export default function App() {
       createdAt: Date.now(),
     });
 
-    // Forced target overrides grouping
+    // QoL: if target is "today", only use an existing Today; otherwise use active list (or Inbox)
     const forcedListId =
       target === "inbox" ? ensureInboxId()
-      : target === "today" ? ensureTodayId()
-      : target === "active" ? (activeList?.id ?? ensureInboxId())
+      : target === "today"
+        ? (findTodayId() ?? (activeList?.id ?? ensureInboxId()))
+      : target === "active"
+        ? (activeList?.id ?? ensureInboxId())
       : null;
 
     if (forcedListId) {
@@ -500,8 +435,14 @@ export default function App() {
     if (!text) return;
     const map = parseTextToTasks(text, ingestMode, ingestTarget);
     addParsedTasks(map);
-    if (ingestTarget === "today") setActiveListId(ensureTodayId());
-    else if (ingestTarget === "inbox") setActiveListId(ensureInboxId());
+
+    // QoL: don't auto-create/switch to Today; only switch if Today already exists
+    if (ingestTarget === "today") {
+      const tid = findTodayId();
+      if (tid) setActiveListId(tid);
+    } else if (ingestTarget === "inbox") {
+      setActiveListId(ensureInboxId());
+    }
   }
 
   function handleDragOverPage(e: React.DragEvent<HTMLDivElement>) {
@@ -513,8 +454,14 @@ export default function App() {
     if (!text) return;
     const map = parseTextToTasks(text, ingestMode, ingestTarget);
     addParsedTasks(map);
-    if (ingestTarget === "today") setActiveListId(ensureTodayId());
-    else if (ingestTarget === "inbox") setActiveListId(ensureInboxId());
+
+    // QoL: same logic as paste
+    if (ingestTarget === "today") {
+      const tid = findTodayId();
+      if (tid) setActiveListId(tid);
+    } else if (ingestTarget === "inbox") {
+      setActiveListId(ensureInboxId());
+    }
   }
 
   /* ---------------------------
@@ -754,9 +701,6 @@ export default function App() {
       </main>
 
       <style>{`
-/* ========= FULL STYLE (mobile-friendly) ========= */
-
-/* Base + palettes */
 /* ========= FULL STYLE (desktop + mobile, copy/paste) ========= */
 
 /* Base + palettes */
@@ -945,47 +889,42 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
   background: var(--input-bg);
   transition: transform 140ms ease, opacity 180ms ease, background 160ms, box-shadow 160ms;
   animation: fade-in 180ms ease;
-  overflow: hidden; /* ensures buttons don't spill past rounded corners */
+  overflow: hidden;
 }
 .task.appear { animation: fade-in 180ms ease; }
 .task.deleting { opacity: 0; transform: scale(.98); }
 @keyframes fade-in { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
 
-/* Left side (checkbox + text) */
 .taskLeft {
   display:flex; align-items:flex-start; gap:10px;
-  flex: 1 1 240px; /* keeps adequate text width on desktop */
+  flex: 1 1 240px;
   min-width: 0;
 }
 .taskMain { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
 
-/* Text wrapping */
 .taskText {
   letter-spacing:.1px;
-  white-space: pre-wrap !important;  /* wrap horizontally & respect line breaks */
+  white-space: pre-wrap !important;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 .taskText.done { text-decoration: line-through; opacity:.8; }
 
-/* Tags */
 .tagRow { display:flex; flex-wrap:wrap; gap:6px; max-width:100%; }
 .tag { font-size:12px; padding:2px 6px; border-radius:999px; background: var(--panel); border:1px solid var(--line); opacity:.9; }
 
-/* Edit inputs */
 .editBlock { display:flex; flex-direction:column; gap:6px; }
 .editText, .editTags {
   background: var(--panel); color: var(--text); border:1px solid var(--line); padding:8px 10px; border-radius:8px;
   min-height:44px; font-size:16px;
 }
 
-/* Right controls (prio/date/delete/handle) */
 .taskRight {
   display:flex; align-items:center; gap:8px;
-  flex: 0 1 320px;            /* can shrink; avoids overflow */
+  flex: 0 1 320px;
   margin-left: auto;
-  flex-wrap: wrap;            /* allow second line if needed */
-  min-width: 0;               /* <<< important: keeps inside card */
+  flex-wrap: wrap;
+  min-width: 0;
   max-width: 100%;
   justify-content: flex-end;
 }
@@ -1000,13 +939,12 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
   background: var(--panel); color:var(--text); border:1px solid var(--line);
   padding:7px 8px; border-radius:8px; min-height:44px; min-width:44px;
   font-size:15px; line-height:1.2;
-  width: 11ch; min-width: 9.5ch; max-width: 14ch; /* keeps row tidy */
+  width: 11ch; min-width: 9.5ch; max-width: 14ch;
 }
 .icon { cursor:pointer; background: var(--panel); border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:8px; min-height:44px; min-width:44px; }
 .icon.danger { color:#f87171; }
 .icon.confirm { color:#22c55e; }
 
-/* Drag handle (dnd-kit) */
 .dragHandle {
   cursor: grab;
   background: var(--panel);
@@ -1019,19 +957,16 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 }
 .dragHandle:active { cursor: grabbing; }
 
-/* Dark-mode placeholders brighter */
 .wrap.dark input::placeholder,
 .wrap.dark textarea::placeholder { color: #fff; opacity: 0.8; }
 
 /* ======= MOBILE (stack lists and tasks in columns) ======= */
 @media (max-width: 768px) {
-  /* Shell */
   .main { grid-template-columns: 1fr; }
   .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
   .actions { gap: 8px; }
   .searchBox { width: 100%; min-width: 0; }
 
-  /* Panels: single column (no horizontal scroll) */
   .listsGrid {
     display: block !important;
     overflow: visible !important;
@@ -1050,7 +985,6 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
     box-shadow: 0 1px 0 rgba(0,0,0,0.04);
   }
 
-  /* Tasks: column layout */
   .task {
     flex-direction: column !important;
     align-items: stretch !important;
@@ -1068,10 +1002,8 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
     max-width: 100% !important;
   }
 
-  /* Tappable sizes */
   .prio, .icon, .dragHandle, .listTools button { min-width: 44px; min-height: 44px; }
 
-  /* Keep long text tidy; dbl‑tap to edit for full view */
   .taskText {
     display: -webkit-box;
     -webkit-line-clamp: 4;
@@ -1079,7 +1011,6 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
     overflow: hidden;
   }
 
-  /* Sticky Add bar near bottom for quick input */
   .content { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
   .addBar {
     position: sticky;
@@ -1095,7 +1026,6 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
   .addBar input { min-height: 44px; font-size: 16px; }
   .addBar button { min-height: 44px; min-width: 84px; }
 }
-
       `}</style>
     </div>
   );
