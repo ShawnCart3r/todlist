@@ -757,6 +757,9 @@ export default function App() {
 /* ========= FULL STYLE (mobile-friendly) ========= */
 
 /* Base + palettes */
+/* ========= FULL STYLE (desktop + mobile, copy/paste) ========= */
+
+/* Base + palettes */
 *, *::before, *::after { box-sizing: border-box; }
 body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
 .wrap { min-height: 100vh; color: var(--text); background: var(--bg-gradient); }
@@ -876,12 +879,12 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 .rowActions .icon.danger { color: color-mix(in oklab, var(--danger) 80%, white); border-color: color-mix(in oklab, var(--danger) 35%, var(--line)); }
 .rowActions .mini { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); }
 
-.content { padding:18px; padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+.content { padding:18px; }
 .listHeader { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .listHeader h2 { margin:0; font-size:18px; letter-spacing:.2px; }
 .listTools button {
   background: var(--btn-bg); color: var(--text); border:1px solid var(--line);
-  padding:9px 12px; border-radius:10px; min-height: 44px;
+  padding:9px 12px; border-radius:10px; min-height:44px;
 }
 
 /* Add bar */
@@ -895,20 +898,8 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
   padding:11px 12px; border-radius:10px; background: var(--btn-bg); color: var(--text);
   border:1px solid var(--line); min-height:44px; min-width:84px;
 }
-@media (max-width: 880px) {
-  .addBar {
-    position: sticky;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    z-index: 20;
-    background: color-mix(in oklab, var(--bg2) 85%, transparent);
-    backdrop-filter: blur(6px);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 8px;
-  }
-}
 
-/* Lists scroller (horizontal) */
+/* ======= DESKTOP LISTS (flex scroller) ======= */
 .listsGrid {
   display: flex;
   gap: 14px;
@@ -943,10 +934,9 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 }
 .empty { font-size:13px; color:var(--muted); padding:10px; border:1px dashed var(--line); border-radius:10px; text-align:center; }
 
-/* Task card */
+/* ======= TASK CARD ======= */
 .task {
   display:flex;
-  flex-wrap: wrap;                 /* allow second row */
   align-items:flex-start;
   justify-content:space-between;
   gap:10px;
@@ -955,6 +945,7 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
   background: var(--input-bg);
   transition: transform 140ms ease, opacity 180ms ease, background 160ms, box-shadow 160ms;
   animation: fade-in 180ms ease;
+  overflow: hidden; /* ensures buttons don't spill past rounded corners */
 }
 .task.appear { animation: fade-in 180ms ease; }
 .task.deleting { opacity: 0; transform: scale(.98); }
@@ -963,7 +954,7 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 /* Left side (checkbox + text) */
 .taskLeft {
   display:flex; align-items:flex-start; gap:10px;
-  flex: 1 1 240px;                /* keep adequate text width */
+  flex: 1 1 240px; /* keeps adequate text width on desktop */
   min-width: 0;
 }
 .taskMain { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
@@ -971,7 +962,7 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 /* Text wrapping */
 .taskText {
   letter-spacing:.1px;
-  white-space: pre-wrap !important;  /* wrap horizontally and respect line breaks */
+  white-space: pre-wrap !important;  /* wrap horizontally & respect line breaks */
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -990,17 +981,27 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 
 /* Right controls (prio/date/delete/handle) */
 .taskRight {
-  flex: 0 0 auto;                 /* don’t steal width from text */
-  min-width: max-content;         /* keep controls intact; triggers wrap if tight */
   display:flex; align-items:center; gap:8px;
-  flex-wrap: wrap;                /* controls can wrap to second row */
-  margin-left: auto;              /* push to the right on first row */
+  flex: 0 1 320px;            /* can shrink; avoids overflow */
+  margin-left: auto;
+  flex-wrap: wrap;            /* allow second line if needed */
+  min-width: 0;               /* <<< important: keeps inside card */
+  max-width: 100%;
+  justify-content: flex-end;
 }
+.taskRight > * { flex: 0 0 auto; }
+
 .prio { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; min-height:44px; min-width:44px; }
 .prio.low { box-shadow: inset 0 0 0 1px color-mix(in oklab, #16a34a 40%, transparent); }
 .prio.med { box-shadow: inset 0 0 0 1px color-mix(in oklab, #60a5fa 40%, transparent); }
 .prio.high { box-shadow: inset 0 0 0 1px color-mix(in oklab, #f87171 40%, transparent); }
-.due { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; min-height:44px; min-width:44px; font-size:15px; line-height:1.2; }
+
+.due {
+  background: var(--panel); color:var(--text); border:1px solid var(--line);
+  padding:7px 8px; border-radius:8px; min-height:44px; min-width:44px;
+  font-size:15px; line-height:1.2;
+  width: 11ch; min-width: 9.5ch; max-width: 14ch; /* keeps row tidy */
+}
 .icon { cursor:pointer; background: var(--panel); border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:8px; min-height:44px; min-width:44px; }
 .icon.danger { color:#f87171; }
 .icon.confirm { color:#22c55e; }
@@ -1018,29 +1019,59 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 }
 .dragHandle:active { cursor: grabbing; }
 
-/* Remove blue tap highlight on iOS */
-* { -webkit-tap-highlight-color: transparent; }
+/* Dark-mode placeholders brighter */
+.wrap.dark input::placeholder,
+.wrap.dark textarea::placeholder { color: #fff; opacity: 0.8; }
 
-/* Responsive */
-@media (max-width: 880px) {
+/* ======= MOBILE (stack lists and tasks in columns) ======= */
+@media (max-width: 768px) {
+  /* Shell */
   .main { grid-template-columns: 1fr; }
   .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
   .actions { gap: 8px; }
-  .searchBox { min-width: 0; width: 100%; }
+  .searchBox { width: 100%; min-width: 0; }
 
-  /* One panel per screen */
-  .listsGrid { scroll-snap-type: x mandatory; gap: 12px; }
+  /* Panels: single column (no horizontal scroll) */
+  .listsGrid {
+    display: block !important;
+    overflow: visible !important;
+    padding: 6px 0 12px !important;
+    gap: 0 !important;
+    scroll-snap-type: none !important;
+  }
   .listPanel {
-    flex-basis: 100vw; max-width: 100vw; min-width: 100vw;
-    scroll-snap-align: start; border-radius: 0; border-left: none; border-right: none;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    border-radius: 12px;
+    margin: 0 0 12px 0;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
   }
 
-  /* Tidy controls on narrow widths: wrap under text */
-  .task { gap: 8px; }
-  .taskLeft { flex: 1 1 260px; }
-  .taskRight { width: 100%; justify-content: flex-end; margin-left: 0; row-gap: 6px; }
+  /* Tasks: column layout */
+  .task {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .taskLeft { flex: 1 1 auto !important; min-width: 0 !important; }
+  .taskRight {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    margin-left: 0 !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
 
-  /* Clamp long task text on small screens for readability */
+  /* Tappable sizes */
+  .prio, .icon, .dragHandle, .listTools button { min-width: 44px; min-height: 44px; }
+
+  /* Keep long text tidy; dbl‑tap to edit for full view */
   .taskText {
     display: -webkit-box;
     -webkit-line-clamp: 4;
@@ -1048,9 +1079,23 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
     overflow: hidden;
   }
 
-  /* Slightly lighter shadows on mobile */
-  .task, .listPanel { box-shadow: 0 1px 0 rgba(0,0,0,0.04); }
+  /* Sticky Add bar near bottom for quick input */
+  .content { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+  .addBar {
+    position: sticky;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 20;
+    background: color-mix(in oklab, var(--bg2) 85%, transparent);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  .addBar input { min-height: 44px; font-size: 16px; }
+  .addBar button { min-height: 44px; min-width: 84px; }
 }
+
       `}</style>
     </div>
   );
