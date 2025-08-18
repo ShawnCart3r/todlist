@@ -898,9 +898,25 @@ export default function App() {
     border:1px solid var(--line);
   }
 
-  .listsGrid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px; align-items:start; }
-  .listPanel { border:1px solid var(--line); border-radius:14px; background: var(--panel);
-               box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset; }
+  .listsGrid {
+  display: flex;                 /* use flex instead of grid */
+  gap: 14px;
+  overflow-x: auto;              /* scroll sideways when too many lists */
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 4px 12px;
+  scroll-snap-type: x mandatory; /* optional: smooth snap on scroll */
+}
+
+.listPanel {
+  flex: 0 0 320px;               /* each list keeps its width */
+  max-width: 360px;
+  min-width: 280px;              /* don’t let them collapse */
+  scroll-snap-align: start;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
+}
   .listPanel.focus { outline: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line)); }
   .panelHead { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line); }
   .panelTitle { font-weight:600; }
@@ -957,6 +973,12 @@ export default function App() {
     .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
     .actions { flex-wrap: wrap; }
     .searchBox { min-width: 0; width: 100%; }
+  }
+  @media (max-width: 880px) {
+  .listPanel {
+    flex-basis: 92vw;
+    max-width: 92vw;
+    min-width: 92vw;
   }
 `}</style>
     </div>
