@@ -756,7 +756,7 @@ export default function App() {
 
       {/* THEME & UI STYLES */}
       <style>{`
-  *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
   body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
   .wrap { min-height: 100vh; color: var(--text); background: var(--bg-gradient); }
 
@@ -914,7 +914,6 @@ export default function App() {
   }
 
   .listPanel {
-    /* responsive width that scales nicely across breakpoints */
     flex: 0 0 clamp(280px, 32vw, 360px);
     max-width: clamp(280px, 32vw, 360px);
     min-width: 280px;
@@ -935,7 +934,7 @@ export default function App() {
   .empty { font-size:13px; color:var(--muted); padding:10px; border:1px dashed var(--line); border-radius:10px; text-align:center; }
 
   .task {
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
     padding:11px; margin-bottom:9px; border:1px solid var(--line); border-radius:12px;
     background: var(--input-bg);
     transition: transform 140ms ease, opacity 180ms ease, background 160ms, box-shadow 160ms;
@@ -949,11 +948,24 @@ export default function App() {
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .taskLeft { display:flex; align-items:flex-start; gap:10px; }
-  .taskMain { display:flex; flex-direction:column; gap:6px; }
-  .taskText { letter-spacing:.1px; }
+  .taskLeft {
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    flex:1;
+    min-width:0;     /* prevent overflow */
+  }
+  .taskMain { flex:1; min-width:0; }
+
+  .taskText {
+    letter-spacing:.1px;
+    white-space: pre-line;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
   .taskText.done { text-decoration: line-through; opacity:.8; }
-  .tagRow { display:flex; flex-wrap:wrap; gap:6px; }
+
+  .tagRow { display:flex; flex-wrap:wrap; gap:6px; max-width:100%; }
   .tag { font-size:12px; padding:2px 6px; border-radius:999px; background: var(--panel); border:1px solid var(--line); opacity:.9; }
 
   .editBlock { display:flex; flex-direction:column; gap:6px; }
@@ -961,7 +973,12 @@ export default function App() {
     background: var(--panel); color: var(--text); border:1px solid var(--line); padding:8px 10px; border-radius:8px;
   }
 
-  .taskRight { display:flex; align-items:center; gap:8px; }
+  .taskRight {
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
   .prio { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
   .prio.low { box-shadow: inset 0 0 0 1px color-mix(in oklab, #16a34a 40%, transparent); }
   .prio.med { box-shadow: inset 0 0 0 1px color-mix(in oklab, #60a5fa 40%, transparent); }
@@ -971,7 +988,6 @@ export default function App() {
   .icon.danger { color:#f87171; }
   .icon.confirm { color:#22c55e; }
 
-  /* New: dedicated drag handle to prevent accidental drags from inputs/selects */
   .dragHandle {
     cursor: grab;
     background: var(--panel);
@@ -992,10 +1008,17 @@ export default function App() {
     .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
     .actions { flex-wrap: wrap; }
     .searchBox { min-width: 0; width: 100%; }
-    .droppable { max-height: 62vh; overflow: auto; } /* optional: avoid nested page scroll */
+    .droppable { max-height: 62vh; overflow: auto; }
+
+    /* clamp long task text on mobile */
+    .taskText {
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
   }
 
-  /* Final, correctly closed mobile rule for panel sizing */
   @media (max-width: 880px) {
     .listPanel {
       flex-basis: 92vw;
@@ -1003,6 +1026,7 @@ export default function App() {
       min-width: 92vw;
     }
   }
+
 `}</style>
     </div>
   );
