@@ -756,7 +756,7 @@ export default function App() {
 
       {/* THEME & UI STYLES */}
       <style>{`
-    *, *::before, *::after { box-sizing: border-box; }
+     *, *::before, *::after { box-sizing: border-box; }
   body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
   .wrap { min-height: 100vh; color: var(--text); background: var(--bg-gradient); }
 
@@ -953,13 +953,13 @@ export default function App() {
     align-items:flex-start;
     gap:10px;
     flex:1;
-    min-width:0;     /* prevent overflow */
+    min-width:0;
   }
   .taskMain { flex:1; min-width:0; }
 
   .taskText {
     letter-spacing:.1px;
-    white-space: pre-line;
+    white-space: pre-wrap;   /* ✅ fixed: respects line breaks, wraps naturally */
     word-break: break-word;
     overflow-wrap: anywhere;
   }
@@ -1026,6 +1026,7 @@ export default function App() {
       min-width: 92vw;
     }
   }
+
 
 `}</style>
     </div>
