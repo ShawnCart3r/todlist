@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -29,7 +30,7 @@ interface Task {
   completed: boolean;
   priority: Priority;
   due?: string;           // ISO date
-  tags: string[];         // NEW
+  tags: string[];
   createdAt: number;
 }
 
@@ -52,7 +53,7 @@ const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 const loadLists = (): ListsState => {
   try {
-    const raw = localStorage.getItem("todo.multilists.v2"); // bump key
+    const raw = localStorage.getItem("todo.multilists.v2");
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -173,7 +174,7 @@ function SortableTask({
       </div>
 
       <div className="taskRight">
-        {/* Drag handle lives here so inputs/selects don’t trigger drags */}
+        {/* Dedicated drag handle so inputs don’t trigger drags */}
         <button className="dragHandle" title="Drag to reorder" {...attributes} {...listeners}>
           ⋮⋮
         </button>
@@ -233,10 +234,10 @@ export default function App() {
   const [activeListId, setActiveListId] = useState<ID>(() => lists[0]?.id || "");
   const [newTask, setNewTask] = useState("");
   const [newListName, setNewListName] = useState("");
-  const [search, setSearch] = useState(""); // NEW global search
+  const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Deleting animation queue (ids fading out)
+  // Deleting animation queue
   const [deleting, setDeleting] = useState<Set<ID>>(new Set());
 
   // THEME
@@ -268,8 +269,12 @@ export default function App() {
     return () => clearInterval(t);
   }, []);
 
-  // DnD
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  // DnD sensors: mouse quick-drag; touch press-and-hold to avoid scroll conflicts
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } })
+  );
+
   const listIds: UniqueIdentifier[] = useMemo(() => lists.map((l) => l.id), [lists]);
   const activeList = useMemo(() => lists.find((l) => l.id === activeListId) || lists[0], [lists, activeListId]);
 
@@ -317,7 +322,6 @@ export default function App() {
   };
 
   const deleteTask = (listId: ID, taskId: ID) => {
-    // fade out first
     setDeleting((prev) => new Set(prev).add(taskId));
     setTimeout(() => {
       setLists((ls) =>
@@ -530,13 +534,12 @@ export default function App() {
     });
   };
 
-  // When searching, we still show all lists but tasks are filtered.
   const filteredLists = useMemo(() => {
     if (queryTokens.length === 0) return lists;
     return lists.map((l) => ({ ...l, tasks: l.tasks.filter(taskMatches) }));
   }, [lists, queryTokens]);
 
-  const dndDisabled = queryTokens.length > 0; // safer UX: disable reordering while filtered
+  const dndDisabled = queryTokens.length > 0;
 
   /* ---------------------------
    * Render
@@ -547,7 +550,6 @@ export default function App() {
         <div className="brand">🗂️ Multi-List To-Do</div>
 
         <div className="actions">
-          {/* Search */}
           <input
             className="searchBox"
             value={search}
@@ -556,7 +558,6 @@ export default function App() {
             title="Search tasks across lists"
           />
 
-          {/* Ingest controls */}
           <div className="ingestControls">
             <label className="ingestLabel">
               <span>Mode</span>
@@ -587,7 +588,6 @@ export default function App() {
             </label>
           </div>
 
-          {/* Theme + New list */}
           <button
             className="toggleTheme"
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
@@ -681,7 +681,6 @@ export default function App() {
                 <button onClick={addTask}>Add</button>
               </div>
 
-              {/* When searching, disable DnD to avoid confusing reorder behavior on filtered views */}
               {dndDisabled ? (
                 <div className="listsGrid">
                   {filteredLists.map((l) => (
@@ -754,9 +753,8 @@ export default function App() {
         </section>
       </main>
 
-      {/* THEME & UI STYLES */}
       <style>{`
-    /* ========= FULL STYLE (drop-in replacement) ========= */
+/* ========= FULL STYLE (mobile-friendly) ========= */
 
 /* Base + palettes */
 *, *::before, *::after { box-sizing: border-box; }
@@ -824,11 +822,13 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 .toggleTheme {
   padding:8px 12px; border-radius:10px; border:1px solid var(--line);
   background: var(--btn-bg); color: var(--text);
+  min-height: 44px; min-width: 44px;
 }
 .searchBox {
   min-width: 220px;
   background: var(--input-bg); color: var(--text);
   border:1px solid var(--line); padding:9px 10px; border-radius:10px;
+  min-height: 44px; font-size: 16px;
 }
 .searchBox::placeholder { color: color-mix(in oklab, var(--muted) 82%, transparent); }
 .ingestControls { display:flex; gap:10px; align-items:center; }
@@ -838,11 +838,13 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 .newList input {
   background: var(--input-bg); color: var(--text);
   border:1px solid var(--line); padding:9px 10px; border-radius:10px;
+  min-height: 44px; font-size: 16px;
 }
 .newList input::placeholder { color: color-mix(in oklab, var(--muted) 85%, transparent); }
 .newList button {
   margin-left:8px; padding:9px 12px; border-radius:10px; border:1px solid var(--line);
   background: var(--btn-bg); color: var(--text);
+  min-height: 44px; min-width: 44px;
 }
 
 /* Shell layout */
@@ -874,24 +876,36 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 .rowActions .icon.danger { color: color-mix(in oklab, var(--danger) 80%, white); border-color: color-mix(in oklab, var(--danger) 35%, var(--line)); }
 .rowActions .mini { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); }
 
-.content { padding:18px; }
+.content { padding:18px; padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
 .listHeader { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .listHeader h2 { margin:0; font-size:18px; letter-spacing:.2px; }
 .listTools button {
   background: var(--btn-bg); color: var(--text); border:1px solid var(--line);
-  padding:9px 12px; border-radius:10px;
+  padding:9px 12px; border-radius:10px; min-height: 44px;
 }
 
 /* Add bar */
 .addBar { display:flex; gap:8px; margin-bottom:12px; }
 .addBar input {
   flex:1; background: var(--input-bg); color: var(--text); border:1px solid var(--line);
-  padding:11px 12px; border-radius:10px;
+  padding:11px 12px; border-radius:10px; min-height:44px; font-size:16px;
 }
 .addBar input::placeholder { color: color-mix(in oklab, var(--muted) 82%, transparent); }
 .addBar button {
   padding:11px 12px; border-radius:10px; background: var(--btn-bg); color: var(--text);
-  border:1px solid var(--line);
+  border:1px solid var(--line); min-height:44px; min-width:84px;
+}
+@media (max-width: 880px) {
+  .addBar {
+    position: sticky;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 20;
+    background: color-mix(in oklab, var(--bg2) 85%, transparent);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px;
+  }
 }
 
 /* Lists scroller (horizontal) */
@@ -932,7 +946,7 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 /* Task card */
 .task {
   display:flex;
-  flex-wrap: wrap;                 /* <<< key: allow second row */
+  flex-wrap: wrap;                 /* allow second row */
   align-items:flex-start;
   justify-content:space-between;
   gap:10px;
@@ -949,7 +963,7 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 /* Left side (checkbox + text) */
 .taskLeft {
   display:flex; align-items:flex-start; gap:10px;
-  flex: 1 1 240px;                /* <<< key: keep adequate text width */
+  flex: 1 1 240px;                /* keep adequate text width */
   min-width: 0;
 }
 .taskMain { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
@@ -957,7 +971,7 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 /* Text wrapping */
 .taskText {
   letter-spacing:.1px;
-  white-space: pre-wrap !important;  /* <<< fixed: wrap horizontally */
+  white-space: pre-wrap !important;  /* wrap horizontally and respect line breaks */
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -971,6 +985,7 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
 .editBlock { display:flex; flex-direction:column; gap:6px; }
 .editText, .editTags {
   background: var(--panel); color: var(--text); border:1px solid var(--line); padding:8px 10px; border-radius:8px;
+  min-height:44px; font-size:16px;
 }
 
 /* Right controls (prio/date/delete/handle) */
@@ -981,12 +996,12 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
   flex-wrap: wrap;                /* controls can wrap to second row */
   margin-left: auto;              /* push to the right on first row */
 }
-.prio { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
+.prio { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; min-height:44px; min-width:44px; }
 .prio.low { box-shadow: inset 0 0 0 1px color-mix(in oklab, #16a34a 40%, transparent); }
 .prio.med { box-shadow: inset 0 0 0 1px color-mix(in oklab, #60a5fa 40%, transparent); }
 .prio.high { box-shadow: inset 0 0 0 1px color-mix(in oklab, #f87171 40%, transparent); }
-.due { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
-.icon { cursor:pointer; background: var(--panel); border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:8px; }
+.due { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; min-height:44px; min-width:44px; font-size:15px; line-height:1.2; }
+.icon { cursor:pointer; background: var(--panel); border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:8px; min-height:44px; min-width:44px; }
 .icon.danger { color:#f87171; }
 .icon.confirm { color:#22c55e; }
 
@@ -999,20 +1014,31 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
   padding: 6px 8px;
   border-radius: 8px;
   touch-action: none;
+  min-height:44px; min-width:44px;
 }
 .dragHandle:active { cursor: grabbing; }
 
-/* Dark-mode placeholders brighter */
-.wrap.dark input::placeholder,
-.wrap.dark textarea::placeholder { color: #fff; opacity: 0.8; }
+/* Remove blue tap highlight on iOS */
+* { -webkit-tap-highlight-color: transparent; }
 
 /* Responsive */
 @media (max-width: 880px) {
   .main { grid-template-columns: 1fr; }
   .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
-  .actions { flex-wrap: wrap; }
+  .actions { gap: 8px; }
   .searchBox { min-width: 0; width: 100%; }
-  .droppable { max-height: 62vh; overflow: auto; }
+
+  /* One panel per screen */
+  .listsGrid { scroll-snap-type: x mandatory; gap: 12px; }
+  .listPanel {
+    flex-basis: 100vw; max-width: 100vw; min-width: 100vw;
+    scroll-snap-align: start; border-radius: 0; border-left: none; border-right: none;
+  }
+
+  /* Tidy controls on narrow widths: wrap under text */
+  .task { gap: 8px; }
+  .taskLeft { flex: 1 1 260px; }
+  .taskRight { width: 100%; justify-content: flex-end; margin-left: 0; row-gap: 6px; }
 
   /* Clamp long task text on small screens for readability */
   .taskText {
@@ -1022,16 +1048,10 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
     overflow: hidden;
   }
 
-  /* Make each panel span the viewport width when stacked */
-  .listPanel {
-    flex-basis: 92vw;
-    max-width: 92vw;
-    min-width: 92vw;
-  }
+  /* Slightly lighter shadows on mobile */
+  .task, .listPanel { box-shadow: 0 1px 0 rgba(0,0,0,0.04); }
 }
-
-
-`}</style>
+      `}</style>
     </div>
   );
 }
