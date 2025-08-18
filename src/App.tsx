@@ -756,276 +756,279 @@ export default function App() {
 
       {/* THEME & UI STYLES */}
       <style>{`
-     *, *::before, *::after { box-sizing: border-box; }
-  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
-  .wrap { min-height: 100vh; color: var(--text); background: var(--bg-gradient); }
+    /* ========= FULL STYLE (drop-in replacement) ========= */
 
-  /* ---------- Dark palette ---------- */
-  .wrap.dark {
-    --bg: #0b0f19;
-    --bg2: #0e1426;
-    --bg-gradient: linear-gradient(180deg, var(--bg), var(--bg2) 220px);
+/* Base + palettes */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
+.wrap { min-height: 100vh; color: var(--text); background: var(--bg-gradient); }
 
-    --panel: #121a2b;
-    --input-bg: #0f172a;
-    --droppable-bg: #0d1527;
+.wrap.dark {
+  --bg: #0b0f19;
+  --bg2: #0e1426;
+  --bg-gradient: linear-gradient(180deg, var(--bg), var(--bg2) 220px);
 
-    --text: #eef2f7;
-    --muted: #9fb0c9;
-    --line: rgba(255,255,255,.14);
+  --panel: #121a2b;
+  --input-bg: #0f172a;
+  --droppable-bg: #0d1527;
 
-    --btn-bg: #152540;
-    --chip-bg: #152748;
-    --chip-border: #294b86;
+  --text: #eef2f7;
+  --muted: #9fb0c9;
+  --line: rgba(255,255,255,.14);
 
-    --accent: #60a5fa;
-    --danger: #f87171;
+  --btn-bg: #152540;
+  --chip-bg: #152748;
+  --chip-border: #294b86;
 
-    --font-size: 15.5px;
-    --line-height: 1.5;
-  }
+  --accent: #60a5fa;
+  --danger: #f87171;
 
-  /* ---------- Light palette ---------- */
-  .wrap.light {
-    --bg: #f6f7fb;
-    --bg2: #ffffff;
-    --bg-gradient: linear-gradient(180deg, var(--bg), var(--bg2) 220px);
-    --panel: #ffffff;
-    --text: #0f172a;
-    --muted: #475569;
-    --line: #e2e8f0;
-    --btn-bg: #eef2ff;
-    --input-bg: #ffffff;
-    --droppable-bg: #f8fafc;
-    --chip-bg: #eef2ff;
-    --chip-border: #c7d2fe;
-    --danger: #b91c1c;
-    --accent: #1f4bb8;
-    --font-size: 15px;
-    --line-height: 1.45;
-  }
+  --font-size: 15.5px;
+  --line-height: 1.5;
+}
+.wrap.light {
+  --bg: #f6f7fb;
+  --bg2: #ffffff;
+  --bg-gradient: linear-gradient(180deg, var(--bg), var(--bg2) 220px);
 
-  .wrap { font-size: var(--font-size); line-height: var(--line-height); }
+  --panel: #ffffff;
+  --input-bg: #ffffff;
+  --droppable-bg: #f8fafc;
 
-  .header {
-    display:flex; gap:16px; align-items:center; justify-content:space-between;
-    padding:16px 20px; border-bottom:1px solid var(--line);
-    position: sticky; top:0;
-    background: color-mix(in oklab, var(--bg) 88%, transparent);
-    backdrop-filter: blur(6px);
-  }
-  .brand { font-weight: 700; letter-spacing: .2px; }
+  --text: #0f172a;
+  --muted: #475569;
+  --line: #e2e8f0;
 
-  .actions { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
-  .toggleTheme {
-    padding:8px 12px; border-radius:10px; border:1px solid var(--line);
-    background: var(--btn-bg); color: var(--text);
-  }
-  .searchBox {
-    min-width: 220px;
-    background: var(--input-bg); color: var(--text);
-    border:1px solid var(--line); padding:9px 10px; border-radius:10px;
-  }
-  .searchBox::placeholder { color: color-mix(in oklab, var(--muted) 82%, transparent); }
+  --btn-bg: #eef2ff;
+  --chip-bg: #eef2ff;
+  --chip-border: #c7d2fe;
 
-  .ingestControls { display:flex; gap:10px; align-items:center; }
-  .ingestLabel { display:flex; align-items:center; gap:6px; color: var(--muted); font-size:12px; }
-  .ingestLabel .prio { background: var(--panel); color: var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
+  --danger: #b91c1c;
+  --accent: #1f4bb8;
 
-  .newList input {
-    background: var(--input-bg); color: var(--text);
-    border:1px solid var(--line); padding:9px 10px; border-radius:10px;
-  }
-  .newList input::placeholder { color: color-mix(in oklab, var(--muted) 85%, transparent); }
-  .newList button {
-    margin-left:8px; padding:9px 12px; border-radius:10px; border:1px solid var(--line);
-    background: var(--btn-bg); color: var(--text);
-  }
+  --font-size: 15px;
+  --line-height: 1.45;
+}
+.wrap { font-size: var(--font-size); line-height: var(--line-height); }
 
-  .main { display:grid; grid-template-columns: 240px 1fr; gap:0; }
-  .sidebar { border-right:1px solid var(--line); padding:14px; }
-  .sideTitle { font-size:12px; color:var(--muted); text-transform: uppercase; letter-spacing:.12em; margin-bottom:8px; }
-  .listNav { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
-  .listNav li { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .listNav li button {
-    flex:1; text-align:left; color:var(--text); background: var(--input-bg);
-    border:1px solid var(--line); padding:9px 11px; border-radius:10px;
-  }
-  .wrap.dark .listNav li.active button { border-color: color-mix(in oklab, var(--accent) 70%, var(--line)); background: #0e1b35; }
-  .wrap.light .listNav li.active button { border-color: var(--accent); background: #edf2ff; }
+/* Header */
+.header {
+  display:flex; gap:16px; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--line);
+  position: sticky; top:0;
+  background: color-mix(in oklab, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+}
+.brand { font-weight: 700; letter-spacing: .2px; }
+.actions { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+.toggleTheme {
+  padding:8px 12px; border-radius:10px; border:1px solid var(--line);
+  background: var(--btn-bg); color: var(--text);
+}
+.searchBox {
+  min-width: 220px;
+  background: var(--input-bg); color: var(--text);
+  border:1px solid var(--line); padding:9px 10px; border-radius:10px;
+}
+.searchBox::placeholder { color: color-mix(in oklab, var(--muted) 82%, transparent); }
+.ingestControls { display:flex; gap:10px; align-items:center; }
+.ingestLabel { display:flex; align-items:center; gap:6px; color: var(--muted); font-size:12px; }
+.ingestLabel .prio { background: var(--panel); color: var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
 
-  /* Inbox pops in dark mode */
-  .wrap.dark .listNav li .inboxBtn {
-    background: #000 !important;
-    color: #fff !important;
-    border-color: #2a2a2a !important;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset;
-  }
-  .wrap.dark .listNav li.active .inboxBtn {
-    background: #000 !important;
-    color: #fff !important;
-    border-color: #3a3a3a !important;
-  }
-  .wrap.dark .listNav li .inboxBtn:hover,
-  .wrap.dark .listNav li .inboxBtn:focus-visible {
-    border-color: #4b5563 !important;
-    outline: none;
-  }
+.newList input {
+  background: var(--input-bg); color: var(--text);
+  border:1px solid var(--line); padding:9px 10px; border-radius:10px;
+}
+.newList input::placeholder { color: color-mix(in oklab, var(--muted) 85%, transparent); }
+.newList button {
+  margin-left:8px; padding:9px 12px; border-radius:10px; border:1px solid var(--line);
+  background: var(--btn-bg); color: var(--text);
+}
 
-  .rowActions { display:flex; align-items:center; gap:6px; }
-  .rowActions .icon {
-    background: var(--input-bg); border:1px solid var(--line); color:var(--text);
-    padding:6px 8px; border-radius:8px;
-  }
-  .rowActions .icon.danger { color: color-mix(in oklab, var(--danger) 80%, white); border-color: color-mix(in oklab, var(--danger) 35%, var(--line)); }
-  .rowActions .mini { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); }
+/* Shell layout */
+.main { display:grid; grid-template-columns: 240px 1fr; gap:0; }
+.sidebar { border-right:1px solid var(--line); padding:14px; }
+.sideTitle { font-size:12px; color:var(--muted); text-transform: uppercase; letter-spacing:.12em; margin-bottom:8px; }
+.listNav { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+.listNav li { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.listNav li button {
+  flex:1; text-align:left; color:var(--text); background: var(--input-bg);
+  border:1px solid var(--line); padding:9px 11px; border-radius:10px;
+}
+.wrap.dark .listNav li.active button { border-color: color-mix(in oklab, var(--accent) 70%, var(--line)); background: #0e1b35; }
+.wrap.light .listNav li.active button { border-color: var(--accent); background: #edf2ff; }
 
-  .content { padding:18px; }
-  .listHeader { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-  .listHeader h2 { margin:0; font-size:18px; letter-spacing:.2px; }
-  .listTools button {
-    background: var(--btn-bg); color: var(--text); border:1px solid var(--line);
-    padding:9px 12px; border-radius:10px;
-  }
+.wrap.dark .listNav li .inboxBtn {
+  background: #000 !important; color:#fff !important; border-color:#2a2a2a !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+.wrap.dark .listNav li.active .inboxBtn { border-color:#3a3a3a !important; }
+.wrap.dark .listNav li .inboxBtn:hover,
+.wrap.dark .listNav li .inboxBtn:focus-visible { border-color:#4b5563 !important; outline:none; }
 
-  .addBar { display:flex; gap:8px; margin-bottom:12px; }
-  .addBar input {
-    flex:1; background: var(--input-bg); color: var(--text); border:1px solid var(--line);
-    padding:11px 12px; border-radius:10px;
-  }
-  .addBar input::placeholder { color: color-mix(in oklab, var(--muted) 82%, transparent); }
-  .addBar button {
-    padding:11px 12px; border-radius:10px; background: var(--btn-bg); color: var(--text);
-    border:1px solid var(--line);
-  }
+.rowActions { display:flex; align-items:center; gap:6px; }
+.rowActions .icon {
+  background: var(--input-bg); border:1px solid var(--line); color:var(--text);
+  padding:6px 8px; border-radius:8px;
+}
+.rowActions .icon.danger { color: color-mix(in oklab, var(--danger) 80%, white); border-color: color-mix(in oklab, var(--danger) 35%, var(--line)); }
+.rowActions .mini { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); }
 
-  /* --- Horizontal scroller for lists --- */
-  .listsGrid {
-    display: flex;
-    gap: 14px;
-    overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
-    padding: 6px 4px 12px;
-    scroll-snap-type: x mandatory;
-    width: 100%;
-    min-height: 140px;
-    touch-action: pan-x;
-  }
+.content { padding:18px; }
+.listHeader { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.listHeader h2 { margin:0; font-size:18px; letter-spacing:.2px; }
+.listTools button {
+  background: var(--btn-bg); color: var(--text); border:1px solid var(--line);
+  padding:9px 12px; border-radius:10px;
+}
 
-  .listPanel {
-    flex: 0 0 clamp(280px, 32vw, 360px);
-    max-width: clamp(280px, 32vw, 360px);
-    min-width: 280px;
-    scroll-snap-align: start;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--panel);
-    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
-  }
-  .listPanel.focus { outline: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line)); }
-  .panelHead { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line); }
-  .panelTitle { font-weight:600; }
-  .panelMeta { display:flex; gap:10px; color:var(--muted); font-size:12px; }
-  .chip { background: var(--chip-bg); border:1px solid var(--chip-border); padding:2px 6px; border-radius:999px; }
+/* Add bar */
+.addBar { display:flex; gap:8px; margin-bottom:12px; }
+.addBar input {
+  flex:1; background: var(--input-bg); color: var(--text); border:1px solid var(--line);
+  padding:11px 12px; border-radius:10px;
+}
+.addBar input::placeholder { color: color-mix(in oklab, var(--muted) 82%, transparent); }
+.addBar button {
+  padding:11px 12px; border-radius:10px; background: var(--btn-bg); color: var(--text);
+  border:1px solid var(--line);
+}
 
-  .droppable { padding:10px; min-height: 90px; background: var(--droppable-bg);
-               border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
-  .empty { font-size:13px; color:var(--muted); padding:10px; border:1px dashed var(--line); border-radius:10px; text-align:center; }
+/* Lists scroller (horizontal) */
+.listsGrid {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 4px 12px;
+  scroll-snap-type: x mandatory;
+  width: 100%;
+  min-height: 140px;
+  touch-action: pan-x;
+}
+.listPanel {
+  flex: 0 0 clamp(280px, 32vw, 360px);
+  max-width: clamp(280px, 32vw, 360px);
+  min-width: 280px;
+  scroll-snap-align: start;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset;
+}
+.listPanel.focus { outline: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line)); }
+.panelHead { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line); }
+.panelTitle { font-weight:600; }
+.panelMeta { display:flex; gap:10px; color:var(--muted); font-size:12px; }
+.chip { background: var(--chip-bg); border:1px solid var(--chip-border); padding:2px 6px; border-radius:999px; }
 
-  .task {
-    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-    padding:11px; margin-bottom:9px; border:1px solid var(--line); border-radius:12px;
-    background: var(--input-bg);
-    transition: transform 140ms ease, opacity 180ms ease, background 160ms, box-shadow 160ms;
-    animation: fade-in 180ms ease;
-  }
-  .task.appear { animation: fade-in 180ms ease; }
-  .task.deleting { opacity: 0; transform: scale(.98); }
+.droppable {
+  padding:10px; min-height: 90px; background: var(--droppable-bg);
+  border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;
+}
+.empty { font-size:13px; color:var(--muted); padding:10px; border:1px dashed var(--line); border-radius:10px; text-align:center; }
 
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+/* Task card */
+.task {
+  display:flex;
+  flex-wrap: wrap;                 /* <<< key: allow second row */
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px; margin-bottom:9px;
+  border:1px solid var(--line); border-radius:12px;
+  background: var(--input-bg);
+  transition: transform 140ms ease, opacity 180ms ease, background 160ms, box-shadow 160ms;
+  animation: fade-in 180ms ease;
+}
+.task.appear { animation: fade-in 180ms ease; }
+.task.deleting { opacity: 0; transform: scale(.98); }
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
 
-  .taskLeft {
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    flex:1;
-    min-width:0;
-  }
-  .taskMain { flex:1; min-width:0; }
+/* Left side (checkbox + text) */
+.taskLeft {
+  display:flex; align-items:flex-start; gap:10px;
+  flex: 1 1 240px;                /* <<< key: keep adequate text width */
+  min-width: 0;
+}
+.taskMain { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
 
+/* Text wrapping */
+.taskText {
+  letter-spacing:.1px;
+  white-space: pre-wrap !important;  /* <<< fixed: wrap horizontally */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.taskText.done { text-decoration: line-through; opacity:.8; }
+
+/* Tags */
+.tagRow { display:flex; flex-wrap:wrap; gap:6px; max-width:100%; }
+.tag { font-size:12px; padding:2px 6px; border-radius:999px; background: var(--panel); border:1px solid var(--line); opacity:.9; }
+
+/* Edit inputs */
+.editBlock { display:flex; flex-direction:column; gap:6px; }
+.editText, .editTags {
+  background: var(--panel); color: var(--text); border:1px solid var(--line); padding:8px 10px; border-radius:8px;
+}
+
+/* Right controls (prio/date/delete/handle) */
+.taskRight {
+  flex: 0 0 auto;                 /* don’t steal width from text */
+  min-width: max-content;         /* keep controls intact; triggers wrap if tight */
+  display:flex; align-items:center; gap:8px;
+  flex-wrap: wrap;                /* controls can wrap to second row */
+  margin-left: auto;              /* push to the right on first row */
+}
+.prio { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
+.prio.low { box-shadow: inset 0 0 0 1px color-mix(in oklab, #16a34a 40%, transparent); }
+.prio.med { box-shadow: inset 0 0 0 1px color-mix(in oklab, #60a5fa 40%, transparent); }
+.prio.high { box-shadow: inset 0 0 0 1px color-mix(in oklab, #f87171 40%, transparent); }
+.due { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
+.icon { cursor:pointer; background: var(--panel); border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:8px; }
+.icon.danger { color:#f87171; }
+.icon.confirm { color:#22c55e; }
+
+/* Drag handle (dnd-kit) */
+.dragHandle {
+  cursor: grab;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 8px;
+  touch-action: none;
+}
+.dragHandle:active { cursor: grabbing; }
+
+/* Dark-mode placeholders brighter */
+.wrap.dark input::placeholder,
+.wrap.dark textarea::placeholder { color: #fff; opacity: 0.8; }
+
+/* Responsive */
+@media (max-width: 880px) {
+  .main { grid-template-columns: 1fr; }
+  .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
+  .actions { flex-wrap: wrap; }
+  .searchBox { min-width: 0; width: 100%; }
+  .droppable { max-height: 62vh; overflow: auto; }
+
+  /* Clamp long task text on small screens for readability */
   .taskText {
-    letter-spacing:.1px;
-    white-space: pre-wrap;   /* ✅ fixed: respects line breaks, wraps naturally */
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-  .taskText.done { text-decoration: line-through; opacity:.8; }
-
-  .tagRow { display:flex; flex-wrap:wrap; gap:6px; max-width:100%; }
-  .tag { font-size:12px; padding:2px 6px; border-radius:999px; background: var(--panel); border:1px solid var(--line); opacity:.9; }
-
-  .editBlock { display:flex; flex-direction:column; gap:6px; }
-  .editText, .editTags {
-    background: var(--panel); color: var(--text); border:1px solid var(--line); padding:8px 10px; border-radius:8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .taskRight {
-    flex-shrink:0;
-    display:flex;
-    align-items:center;
-    gap:8px;
+  /* Make each panel span the viewport width when stacked */
+  .listPanel {
+    flex-basis: 92vw;
+    max-width: 92vw;
+    min-width: 92vw;
   }
-  .prio { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
-  .prio.low { box-shadow: inset 0 0 0 1px color-mix(in oklab, #16a34a 40%, transparent); }
-  .prio.med { box-shadow: inset 0 0 0 1px color-mix(in oklab, #60a5fa 40%, transparent); }
-  .prio.high { box-shadow: inset 0 0 0 1px color-mix(in oklab, #f87171 40%, transparent); }
-  .due { background: var(--panel); color:var(--text); border:1px solid var(--line); padding:7px 8px; border-radius:8px; }
-  .icon { cursor:pointer; background: var(--panel); border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:8px; }
-  .icon.danger { color:#f87171; }
-  .icon.confirm { color:#22c55e; }
-
-  .dragHandle {
-    cursor: grab;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    color: var(--text);
-    padding: 6px 8px;
-    border-radius: 8px;
-    touch-action: none;
-  }
-  .dragHandle:active { cursor: grabbing; }
-
-  /* Brighter placeholders in dark mode */
-  .wrap.dark input::placeholder,
-  .wrap.dark textarea::placeholder { color: #fff; opacity: 0.8; }
-
-  @media (max-width: 880px) {
-    .main { grid-template-columns: 1fr; }
-    .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
-    .actions { flex-wrap: wrap; }
-    .searchBox { min-width: 0; width: 100%; }
-    .droppable { max-height: 62vh; overflow: auto; }
-
-    /* clamp long task text on mobile */
-    .taskText {
-      display: -webkit-box;
-      -webkit-line-clamp: 4;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-  }
-
-  @media (max-width: 880px) {
-    .listPanel {
-      flex-basis: 92vw;
-      max-width: 92vw;
-      min-width: 92vw;
-    }
-  }
+}
 
 
 `}</style>
