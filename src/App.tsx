@@ -47,13 +47,14 @@ type IngestMode = "single" | "group";
 type IngestTarget = "auto" | "inbox" | "today" | "active";
 
 /* ===========================
- * Utilities & storage
+ * Utilities & storage (DOM-safe)
  * =========================== */
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 const loadLists = (): ListsState => {
   try {
-    const raw = localStorage.getItem("todo.multilists.v2");
+    if (typeof window === "undefined") return [];
+    const raw = window.localStorage.getItem("todo.multilists.v2");
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -61,12 +62,16 @@ const loadLists = (): ListsState => {
 };
 const saveLists = (lists: ListsState) => {
   try {
-    localStorage.setItem("todo.multilists.v2", JSON.stringify(lists));
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("todo.multilists.v2", JSON.stringify(lists));
   } catch {}
 };
 
-const loadLastResetDate = () => localStorage.getItem("todo.lastResetDate.v1") || "";
-const saveLastResetDate = (d: string) => localStorage.setItem("todo.lastResetDate.v1", d);
+const loadLastResetDate = () =>
+  (typeof window !== "undefined" ? window.localStorage.getItem("todo.lastResetDate.v1") : "") || "";
+const saveLastResetDate = (d: string) => {
+  if (typeof window !== "undefined") window.localStorage.setItem("todo.lastResetDate.v1", d);
+};
 
 const isToday = (iso: string) => {
   if (!iso) return false;
@@ -233,7 +238,7 @@ export default function App() {
   const [activeListId, setActiveListId] = useState<ID>(() => lists[0]?.id || "");
   const [newTask, setNewTask] = useState("");
   const [newListName, setNewListName] = useState("");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(""); // global search
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Deleting animation queue
@@ -241,9 +246,11 @@ export default function App() {
 
   // THEME
   const [theme, setTheme] = useState<"dark" | "light">(
-    () => (localStorage.getItem("todo.theme") as "dark" | "light") || "dark"
+    () => (typeof window !== "undefined" ? (window.localStorage.getItem("todo.theme") as "dark" | "light") : "dark") || "dark"
   );
-  useEffect(() => localStorage.setItem("todo.theme", theme), [theme]);
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem("todo.theme", theme);
+  }, [theme]);
 
   // persist lists
   useEffect(() => saveLists(lists), [lists]);
@@ -253,7 +260,7 @@ export default function App() {
     if (!lists.find((l) => l.id === activeListId) && lists[0]) setActiveListId(lists[0].id);
   }, [lists, activeListId]);
 
-  // Optional midnight auto-clear
+  // Optional midnight auto-clear (DOM-typed timer)
   useEffect(() => {
     const resetIfNeeded = () => {
       const last = loadLastResetDate();
@@ -264,11 +271,13 @@ export default function App() {
       }
     };
     resetIfNeeded();
-    const t = setInterval(resetIfNeeded, 60 * 1000);
-    return () => clearInterval(t);
+    const t = typeof window !== "undefined" ? window.setInterval(resetIfNeeded, 60 * 1000) : 0;
+    return () => {
+      if (typeof window !== "undefined") window.clearInterval(t);
+    };
   }, []);
 
-  // DnD sensors: mouse quick-drag; touch press-and-hold to avoid scroll conflicts
+  // DnD sensors: mouse quick-drag; touch delay to avoid scrolling conflict
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } })
@@ -322,7 +331,7 @@ export default function App() {
 
   const deleteTask = (listId: ID, taskId: ID) => {
     setDeleting((prev) => new Set(prev).add(taskId));
-    setTimeout(() => {
+    window.setTimeout(() => {
       setLists((ls) =>
         ls.map((l) => (l.id === listId ? { ...l, tasks: l.tasks.filter((t) => t.id !== taskId) } : l))
       );
@@ -350,7 +359,7 @@ export default function App() {
   };
   const ensureInboxId = () => getOrCreateListByName("Inbox");
 
-  // NEW QoL helper: find an existing Today without creating it
+  // QoL helper: find an existing Today without creating it
   const findTodayId = () => findListByName("Today")?.id || null;
 
   function parseTextToTasks(raw: string, mode: IngestMode, target: IngestTarget): Record<ID, Task[]> {
@@ -387,7 +396,7 @@ export default function App() {
       return { [lid]: lines.map(makeTask) };
     }
 
-    // GROUP mode (auto headings)
+    // GROUP mode (auto headings create/append lists)
     const result: Record<ID, Task[]> = {};
     let currentListId: ID | null = null;
 
@@ -455,7 +464,6 @@ export default function App() {
     const map = parseTextToTasks(text, ingestMode, ingestTarget);
     addParsedTasks(map);
 
-    // QoL: same logic as paste
     if (ingestTarget === "today") {
       const tid = findTodayId();
       if (tid) setActiveListId(tid);
@@ -464,9 +472,73 @@ export default function App() {
     }
   }
 
+  // DnD: helpers to locate items
+  const findListIdByTask = (taskId: ID): ID | null => {
+    for (const l of lists) if (l.tasks.some((t) => t.id === taskId)) return l.id;
+    return null;
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = active.id as ID;
+    const overId = over.id as ID;
+
+    const fromListId = findListIdByTask(activeId);
+    const toListId = listIds.includes(overId) ? (overId as ID) : findListIdByTask(overId);
+    if (!fromListId || !toListId || fromListId === toListId) return;
+
+    setLists((ls) => {
+      const from = ls.find((l) => l.id === fromListId)!;
+      const to = ls.find((l) => l.id === toListId)!;
+
+      const activeTask = from.tasks.find((t) => t.id === activeId)!;
+      const fromTasks = from.tasks.filter((t) => t.id !== activeId);
+
+      const overIndex = listIds.includes(overId) ? to.tasks.length : to.tasks.findIndex((t) => t.id === overId);
+      const toTasks = [...to.tasks];
+      const insertIndex = overIndex < 0 ? toTasks.length : overIndex;
+      toTasks.splice(insertIndex, 0, activeTask);
+
+      return ls.map((l) => {
+        if (l.id === fromListId) return { ...l, tasks: fromTasks };
+        if (l.id === toListId) return { ...l, tasks: toTasks };
+        return l;
+      });
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const activeId = active.id as ID;
+    const overId = over.id as ID;
+
+    const fromListId = findListIdByTask(activeId);
+    const toListId = listIds.includes(overId) ? (overId as ID) : findListIdByTask(overId);
+    if (!fromListId || !toListId) return;
+
+    if (fromListId === toListId) {
+      const list = lists.find((l) => l.id === fromListId)!;
+      const oldIndex = list.tasks.findIndex((t) => t.id === activeId);
+      const newIndex = listIds.includes(overId)
+        ? Math.max(0, list.tasks.length - 1)
+        : list.tasks.findIndex((t) => t.id === overId);
+
+      if (oldIndex !== newIndex && newIndex >= 0) {
+        setLists((ls) =>
+          ls.map((l) => (l.id === list.id ? { ...l, tasks: arrayMove(l.tasks, oldIndex, newIndex) } : l))
+        );
+      }
+    }
+  };
+
   /* ---------------------------
-   * Search / filter
+   * Ingest (paste/drag) controls
    * --------------------------- */
+  const [ingestMode, setIngestMode] = useState<IngestMode>("single");
+  const [ingestTarget, setIngestTarget] = useState<IngestTarget>("today");
+
   const queryTokens = useMemo(
     () => search.split(/\s+/).map(norm).filter(Boolean),
     [search]
@@ -486,7 +558,7 @@ export default function App() {
     return lists.map((l) => ({ ...l, tasks: l.tasks.filter(taskMatches) }));
   }, [lists, queryTokens]);
 
-  const dndDisabled = queryTokens.length > 0;
+  const dndDisabled = queryTokens.length > 0; // disable reordering while filtered
 
   /* ---------------------------
    * Render
@@ -579,7 +651,7 @@ export default function App() {
                     className="icon"
                     title="Rename"
                     onClick={() => {
-                      const name = prompt("Rename list:", l.name);
+                      const name = window.prompt("Rename list:", l.name);
                       if (name !== null) renameList(l.id, name.trim() || l.name);
                     }}
                   >
@@ -589,7 +661,7 @@ export default function App() {
                     className="icon danger"
                     title="Delete list"
                     onClick={() => {
-                      if (confirm(`Delete list "${l.name}"?`)) removeList(l.id);
+                      if (window.confirm(`Delete list "${l.name}"?`)) removeList(l.id);
                     }}
                   >
                     🗑️
@@ -700,8 +772,9 @@ export default function App() {
         </section>
       </main>
 
+      {/* FULL STYLE (desktop + mobile) */}
       <style>{`
-/* ========= FULL STYLE (desktop + mobile, copy/paste) ========= */
+/* ========= FULL STYLE (desktop + mobile) ========= */
 
 /* Base + palettes */
 *, *::before, *::after { box-sizing: border-box; }
@@ -1030,3 +1103,4 @@ body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI,
     </div>
   );
 }
+
